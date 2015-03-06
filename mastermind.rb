@@ -1,13 +1,12 @@
-# Based on Parker Mastermind cir. 1993
 class Player;end
 
 
 class Board
-  attr_accessor :decode_board, :display_board, :hint_board
+  attr_accessor :decode_table, :display_board, :hint_table
 
   def initialize
     # The playing 'surface' in which the user makes guesses. One row per turn.
-    @decode_board = [["--","--","--","--"],
+    @decode_table = [["--","--","--","--"],
                      ["--","--","--","--"],
                      ["--","--","--","--"],
                      ["--","--","--","--"],
@@ -18,7 +17,7 @@ class Board
                      ["--","--","--","--"],
                      ["--","--","--","--"]]
     # A place for the program to give feedback on the user guess.           
-    @hint_board = [["--","--","--","--"],
+    @hint_table = [["--","--","--","--"],
                    ["--","--","--","--"],
                    ["--","--","--","--"],
                    ["--","--","--","--"],
@@ -31,22 +30,22 @@ class Board
   end
 
   def board_titles
-    "Turn       Hint Board            Decode Board".center(20)
+    "Turn       Hint Table            Decode Table".center(20)
   end
-# upon each iteration, returns boars and hint row next to each other.
+# upon each iteration, returns boars and hint row inline.
   def show_boards
-    decode_board.each_with_index do |decode_row, index|
-      puts "#{index}      " + "#{hint_board[index].join(" | ")}   " "   #{decode_row.join(" | ")}"
+    decode_table.each_with_index do |decode_row, index|
+      puts "#{index}      " + "#{hint_table[index].join(" | ")}   " "   #{decode_row.join(" | ")}"
     end
   end
-# turn is index(row) of decode_board to be replaced,
+# turn is index(row) of decode_table to be replaced,
 # update is array to replace the one there.
-  def update_decode_board(turn, update)  
-    decode_board[turn] = update
+  def update_decode_table(turn, update)  
+    decode_table[turn] = update
   end
   
-  def update_hint_board(turn,update)
-    hint_board[turn] = update
+  def update_hint_table(turn,update)
+    hint_table[turn] = update
   end
 
 end
@@ -79,6 +78,5 @@ class Array
   end
 end
 
-p = Player.new
 
 
