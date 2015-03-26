@@ -4,27 +4,15 @@ class Player
   def initialize
     @input = []
     @turn = 0
-    @decode = Decode.new
-    @answer = Answer.new
-    @hint = Hint.new
-    @display = Display.new
-    @colors = ["Rd","Bl","Gr","Yw",
-                "Br","Or","Bk","Wh"]  
+    @colors = ["Rd","Bl","Gr","Yw","Br","Or","Bk","Wh"]
   end
 
-  # Do all user_input elements equal an element in colors array?
   def valid_input?
-    if input.length == 4
-      input.all? do |input_color|
-        colors.any? do |code_color|
-          code_color == input_color
-        end
-      end
-    end
+   input.length == 4 && input.all? { |color| colors.include? color }
   end
 
-  def win?
-    input == answer.answer
+  def win?(answer)
+    input == answer
   end
 
   def lose?
@@ -37,18 +25,15 @@ class Player
 
 end
 
-class Display < Player
-  # A class specifically for handling merging and displaying the two game tables
-  def initialize;end
-
-  def show_titles
+class Display
+  def titles
     "Turn       Hint Table            Decode Table".center(20)
   end
 
-  # REWRITE SO NOT SO MESSY
-  def show_tables(hint_table,decode_table)
-    decode_table.each_with_index do |decode_row, index|
-      puts "#{index}      " + "#{hint_table[index].join(" | ")}   " "   #{decode_row.join(" | ")}"
+  def tables(hint_table,decode_table)
+    decode_table.reduce(0) do |turn, decode_row|
+      puts "#{turn}      " + "#{hint_table[turn].join(" | ")}   " "   #{decode_row.join(" | ")}"
+      turn + 1
     end
   end
 
@@ -58,22 +43,8 @@ class Answer
   attr_accessor :answer, :colors
 
   def initialize
-    @answer = []
-    @colors = ["Rd","Bl","Gr","Yw",
-               "Br","Or","Bk","Wh"]   
-  end
-
-  def create
-    4.times do
-      answer << colors.random_select
-      delete_color
-    end
-  end
-
-  private
-
-  def delete_color
-    colors.delete(answer.last)
+    @colors = ["Rd","Bl","Gr","Yw","Br","Or","Bk","Wh"]
+    @answer = colors.sample(4)
   end
 
 end
@@ -95,22 +66,24 @@ class Hint
     @current_hint = []
   end
 
-  def create(input,answer) 
-    input.each_with_index do |input_color, index|
-      answer.each_with_index do |answer_color, answer_index|
+  def create(input,answer)
+    input.reduce(0) do |position, input_color|
+      answer.reduce(0) do |answer_position, answer_color|
         # if color is present and in the right place
-        if input_color == answer_color && index == answer_index 
+        if input_color == answer_color && position == answer_position
           current_hint << "Bk"
         # if color is simply present
         elsif input_color == answer_color
           current_hint << "Wh"
         end
+        answer_position + 1
       end
+      position + 1
     end
   end
 
   # this method fills in current_hint with the appropriate number of "--"
-  # after Bk's Wh's have been populated into it.
+  # after Bk's and Wh's have been populated into it.
   def fill_in
     while current_hint.length < 4
       current_hint << "--"
@@ -121,7 +94,7 @@ class Hint
     table[turn] = current_hint.sort
   end
 
-  def delete 
+  def delete
     current_hint = []
   end
 
@@ -151,46 +124,39 @@ class Decode
 
 end
 
-class Array
-  def random_select
-    self.fetch(rand(self.size) - 1)
-  end
+Game = Struct.new(:player, :decode, :answer, :hint, :display) do
 
-end
-
-
-p = Player.new
-
-puts "\nWelcome to Mastermind!
-\nPlease read the rules at http://en.wikipedia.org/wiki/Mastermind_(board_game).
-\nThis program is based on the 1993 edition of Parker Mastermind. The variation
-\nrules can also be viewed on the wikipedia page. To make a guess, simply type
-\nthe colors in seperated by spaces. Read the readme for color abbreviations."
-
-p.answer.create
-
-loop do
-  puts p.display.show_titles
-  p.display.show_tables(p.hint.table,p.decode.table)
-  puts "Please enter your guess:"
-  p.input = gets.chomp.split.map(&:capitalize)
-  if p.valid_input?
-    if p.win?
-      puts "You won!  Answer: #{p.answer.answer.join(' | ')}"
-      exit
-    elsif p.lose?
-      puts "You lost! Answer: #{p.answer.answer.join(' | ')}"
-      exit
-    else
-      p.hint.create(p.input,p.answer.answer)
-      p.hint.fill_in
-      p.hint.update(p.turn)
-      p.decode.update(p.input,p.turn)
-      p.hint.current_hint = []
-      p.end_turn
+  def run
+    loop do
+      puts display.titles
+      display.tables(hint.table,decode.table)
+      puts "Please enter your guess:"
+      player.input = gets.split.map(&:capitalize)
+      if player.valid_input?
+        if player.win?(answer.answer)
+          puts "You won!  Answer: #{answer.answer.join(' | ')}"
+          exit
+        elsif player.lose?
+          puts "You lost! Answer: #{answer.answer.join(' | ')}"
+          exit
+        else
+          hint.create(player.input,answer.answer)
+          hint.fill_in
+          hint.update(player.turn)
+          decode.update(player.input,player.turn)
+          hint.current_hint = []
+          player.end_turn
+        end
+      else
+        puts "Not a valid input!"
+      end
     end
-  else
-    puts "Not a valid input!"
   end
+
 end
 
+game = Game.new(Player.new, Decode.new, Answer.new, Hint.new, Display.new)
+
+puts "Welcome to Mastermind! Refer to the readme for the rules!"
+
+game.run

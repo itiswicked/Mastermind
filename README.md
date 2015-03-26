@@ -34,7 +34,7 @@ displayed in the Hint Table.
 
 Hint Table:
 
-  * White ('Wh') hint cells filled in by the program indicates that you have a correct color, but not in the right position
-  * Bk ('Bk') hint cells filled in by the program indicates that you have a correct color in the correct position
+  * White ('Wh') hint cells filled in by the program indicate that you have a correct color, but not in the right position
+  * Bk ('Bk') hint cells filled in by the program indicate that you have a correct color in the correct position
 
 Happy hunting!
