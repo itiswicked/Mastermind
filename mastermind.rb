@@ -1,5 +1,5 @@
 class Player
-  attr_accessor :input, :turn, :decode, :answer, :hint, :display, :colors
+  attr_accessor :input, :turn, :colors
 
   def initialize
     @input = []
@@ -44,7 +44,7 @@ class Answer
 
   def initialize
     @colors = ["Rd","Bl","Gr","Yw","Br","Or","Bk","Wh"]
-    @answer = colors.sample(4)
+    @answer = []
   end
 
 end
@@ -124,28 +124,55 @@ class Decode
 
 end
 
-Game = Struct.new(:player, :decode, :answer, :hint, :display) do
+class Computer < Player
+  attr_accessor :guess
 
-  def run
+  def initialize
+    @guess = []
+  end
+
+end
+
+class Game
+  attr_accessor :player, :decode, :answer, :hint, :display, :computer, :user_role
+
+  def initialize(user_role)
+    @player = Player.new
+    @decode = Decode.new
+    @answer = Answer.new
+    @hint = Hint.new
+    @display = Display.new
+    @computer = Computer.new
+    @user_role = user_role
+  end
+
+  def select_user_path
+    case user_role
+    when "Self"
+      play_as_codebreaker
+    when "Comp"
+      play_as_codemaker
+    end
+  end
+
+  private
+
+  def play_as_codebreaker
+    answer.answer = answer.colors.sample(4)
     loop do
       puts display.titles
       display.tables(hint.table,decode.table)
-      puts "Please enter your guess:"
+      puts "Please enter your guess #{player.colors.join(' | ')}:"
       player.input = gets.split.map(&:capitalize)
       if player.valid_input?
         if player.win?(answer.answer)
-          puts "You won!  Answer: #{answer.answer.join(' | ')}"
+          puts "You won! #{display_answer}"
           exit
         elsif player.lose?
-          puts "You lost! Answer: #{answer.answer.join(' | ')}"
+          puts "You lost! #{display_answer}"
           exit
         else
-          hint.create(player.input,answer.answer)
-          hint.fill_in
-          hint.update(player.turn)
-          decode.update(player.input,player.turn)
-          hint.current_hint = []
-          player.end_turn
+          complete_turn
         end
       else
         puts "Not a valid input!"
@@ -153,10 +180,51 @@ Game = Struct.new(:player, :decode, :answer, :hint, :display) do
     end
   end
 
+  def play_as_codemaker
+    puts "Please select code colors:"
+    answer.answer = gets.split.map(&:capitalize)
+    loop do
+      player.input = player.colors.sample(4)
+      puts display.titles
+      display.tables(hint.table,decode.table)
+      if player.win?(answer.answer)
+        puts "Computer Won!"
+        exit
+      elsif player.lose?
+        puts "Computer Lost!"
+        exit
+      else
+        complete_turn
+      end
+    end
+  end
+
+  def display_answer
+    "Answer: #{answer.answer.join(' | ')}"
+  end
+
+  def complete_turn
+    hint.create(player.input,answer.answer)
+    hint.fill_in
+    hint.update(player.turn)
+    decode.update(player.input,player.turn)
+    hint.current_hint = []
+    player.end_turn
+  end
+
 end
 
-game = Game.new(Player.new, Decode.new, Answer.new, Hint.new, Display.new)
+puts "\nWelcome to Mastermind! Refer to the readme for the rules!\n\nYou can choose to solve the code yourself(Self), or set the code and watch the computer attempt to solve it(Comp)."
 
-puts "Welcome to Mastermind! Refer to the readme for the rules!"
+loop do
+  puts "Please choose Self or Comp to determine your role:"
+  $user_role = gets.chomp.capitalize
+  if $user_role == "Self" || "Comp"
+    break
+  else
+     puts "Invalid input, try again."
+  end
+end
 
-game.run
+game = Game.new($user_role)
+game.select_user_path
